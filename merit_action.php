@@ -60,6 +60,26 @@ if ($row = $result->fetch_assoc()) {
 }
 $stmt->close();
 
+// Check duplicate merit claim in meritclaim table
+$stmt = $conn->prepare("
+    SELECT claim_id 
+    FROM meritclaim 
+    WHERE student_id = ? 
+    AND event_id = ?
+");
+$stmt->bind_param("ss", $studentid, $eventId);
+$stmt->execute();
+$result = $stmt->get_result();
+
+if ($result->num_rows > 0) {
+    echo "<script>
+        alert('You have already submitted a merit claim for this event.');
+        window.location.href='meritApplication.php';
+    </script>";
+    exit();
+}
+$stmt->close();
+
 // Handle file upload
 if ($letterFile && $letterFile['error'] === UPLOAD_ERR_OK) {
     $fileTmpPath = $letterFile['tmp_name'];
