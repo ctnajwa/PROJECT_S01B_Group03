@@ -1,0 +1,26 @@
+# Ignore database config
+config.php
+*.env
+
+# Ignore uploads folder
+uploads/
+student_card_uploads/
+IMAGES/uploads/
+
+# Ignore XAMPP temp files
+*.exe
+*.dll
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Ignore VS Code settings
+.vscode/
+*.code-workspace
+
+# Ignore backup files
+*.bak
+*.old
+*.sql
