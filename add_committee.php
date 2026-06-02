@@ -189,8 +189,24 @@ function fetchName(inputElement) {
     success: function(response) {
       const result = JSON.parse(response);
       if (result.success) {
-        nameDisplay.className = "name-display text-success small mt-1";
-        nameDisplay.innerText = result.name;
+        // Student exists, now check if they have a schedule conflict on this event's date
+        $.ajax({
+          url: "check_schedule_conflict.php",
+          method: "POST",
+          data: { student_id: studentId, event_id: currentEventId },
+          success: function(conflictResponse) {
+            const conflictResult = JSON.parse(conflictResponse);
+            if (conflictResult.success && conflictResult.conflict) {
+              // Highlight conflict in red text
+              nameDisplay.className = "name-display text-danger small mt-1";
+              nameDisplay.innerText = result.name + " ⚠️ Conflict: Already assigned to '" + conflictResult.event_title + "' on this date!";
+            } else {
+              // Clear match in green text
+              nameDisplay.className = "name-display text-success small mt-1";
+              nameDisplay.innerText = result.name;
+            }
+          }
+        });
       } else {
         nameDisplay.className = "name-display text-danger small mt-1";
         nameDisplay.innerText = "No student exists under this ID";
