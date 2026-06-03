@@ -13,6 +13,7 @@ if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'Staff (Petakom
   <title>MyPetakom - Attendance Slot</title>
   <link rel="stylesheet" href="STYLE/staff_style.css" />
   <link rel="stylesheet" href="STYLE3/attendance.css" />
+
   <style>
     .view-btn {
       padding: 4px 10px;
@@ -22,8 +23,8 @@ if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'Staff (Petakom
       text-decoration: none;
       margin: 0 5px;
       font-size: 14px;
-      transition: background-color 0.3s ease;
     }
+
     .view-btn:hover {
       background-color: #27ae60;
     }
@@ -36,8 +37,8 @@ if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'Staff (Petakom
       text-decoration: none;
       margin: 0 5px;
       font-size: 14px;
-      transition: background-color 0.3s ease;
     }
+
     .edit-btn:hover {
       background-color: #2980b9;
     }
@@ -50,8 +51,8 @@ if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'Staff (Petakom
       text-decoration: none;
       margin: 0 5px;
       font-size: 14px;
-      transition: background-color 0.3s ease;
     }
+
     .delete-btn:hover {
       background-color: #c0392b;
     }
@@ -64,8 +65,8 @@ if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'Staff (Petakom
       text-decoration: none;
       margin: 0 5px;
       font-size: 14px;
-      transition: background-color 0.3s ease;
     }
+
     .attendance-btn:hover {
       background-color: darkorange;
     }
@@ -91,9 +92,9 @@ if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'Staff (Petakom
     }
   </style>
 </head>
+
 <body>
 
-<!-- Sidebar -->
 <div class="sidebar">
   <img src="IMAGES/LogoPetakom.png" alt="PETAKOM Logo" />
 
@@ -125,13 +126,13 @@ if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'Staff (Petakom
   </div>
 </div>
 
-<!-- Topbar -->
 <div class="topbar">
   <div class="dropdown">
     <div class="profile-wrapper">
       <div class="profile-circle">N.</div>
       <span class="dropdown-icon">▼</span>
     </div>
+
     <div class="dropdown-content-top">
       <a href="#">Profile</a>
       <a href="#">Calendar</a>
@@ -141,79 +142,87 @@ if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'Staff (Petakom
   </div>
 </div>
 
-<!-- Main Content -->
 <div class="attendance-slot-container">
 
-  <!-- + Create Button -->
   <div class="top-bar">
     <a href="attendance_slot.php" class="create-btn">+ Create</a>
   </div>
 
-  <!-- Existing Attendance Slot List -->
   <div class="slot-list">
     <h3>Existing Attendance Slots</h3>
+
     <?php
     $link = mysqli_connect("localhost", "root", "", "mypetakom");
 
     if (!$link) {
-      echo "<div class='error-box'>Database connection failed: " . mysqli_connect_error() . "</div>";
+        echo "<div class='error-box'>Database connection failed: " . mysqli_connect_error() . "</div>";
     } else {
-      $query = "
-        SELECT 
-          a.attendanceslot_id, 
-          a.event_id, 
-          e.event_title, 
-          a.slot_time 
-        FROM attendance_slot a
-        LEFT JOIN event e ON a.event_id = e.event_id
-        ORDER BY a.event_id ASC, a.slot_time ASC
-      ";
 
-      $result = mysqli_query($link, $query);
-      $currentEventId = null;
-      $count = 1;
+        $query = "
+            SELECT 
+                a.attendanceslot_id, 
+                a.event_id, 
+                e.event_title, 
+                a.slot_time 
+            FROM attendance_slot a
+            LEFT JOIN event e ON a.event_id = e.event_id
+            ORDER BY a.event_id ASC, a.slot_time ASC
+        ";
 
-      if (mysqli_num_rows($result) > 0) {
-        while ($row = mysqli_fetch_assoc($result)) {
-          $id = $row['attendanceslot_id'];
-          $eventId = $row['event_id'];
-          $eventTitle = $row['event_title'] ?? "Unknown Event";
-          $slotTime = date("d M Y, H:i", strtotime($row['slot_time']));
+        $result = mysqli_query($link, $query);
+        $currentEventId = null;
+        $count = 1;
 
-          if ($currentEventId !== $eventId) {
-            if ($currentEventId !== null) {
-              echo "</ul>";
+        if ($result && mysqli_num_rows($result) > 0) {
+
+            while ($row = mysqli_fetch_assoc($result)) {
+
+                $id = htmlspecialchars($row['attendanceslot_id']);
+                $eventId = htmlspecialchars($row['event_id']);
+                $eventTitle = htmlspecialchars($row['event_title'] ?? "Unknown Event");
+                $slotTime = htmlspecialchars(date("d M Y, H:i", strtotime($row['slot_time'])));
+
+                if ($currentEventId !== $eventId) {
+                    if ($currentEventId !== null) {
+                        echo "</ul>";
+                    }
+
+                    echo "<h4>Event: {$eventTitle} (ID: {$eventId})</h4>";
+                    echo "<ul>";
+
+                    $currentEventId = $eventId;
+                    $count = 1;
+                }
+
+                echo "<li>
+                        <span class='slot-number'>{$count}.</span>
+                        <span class='slot-title'>{$slotTime}</span>
+
+                        <a href='viewdetailSlot.php?slot_id={$id}' class='view-btn'>View Details</a>
+
+                        <a href='attendanceList.php?slot_id={$id}' class='attendance-btn'>Attendance</a>
+
+                        <a href='updateSlot.php?id={$id}' class='edit-btn'>Update</a>
+
+                        <a href='deleteSlot.php?id={$id}' class='delete-btn' onclick=\"return confirm('Are you sure want to delete this slot?');\">Delete</a>
+                      </li>";
+
+                $count++;
             }
-            echo "<h4>Event: {$eventTitle} (ID: {$eventId})</h4>";
-            echo "<ul>";
-            $currentEventId = $eventId;
-            $count = 1;
-          }
 
-          echo "<li>
-                  <span class='slot-number'>{$count}.</span>
-				  <a href='viewSlot.php?id={$id}' class='slot-title'>{$slotTime}</a>
-                 
-                  <a href='viewdetailSlot.php?id={$id}' class='view-btn'>View Details</a>
-                  <a href='attendanceList.php?id={$id}' class='attendance-btn'>Attendance</a>
-                  <a href='updateSlot.php?id={$id}' class='edit-btn'>Update</a>
-                  <a href='deleteSlot.php?id={$id}' class='delete-btn' onclick=\"return confirm('Are you sure want to delete this slot?');\">Delete</a>
-                </li>";
-          $count++;
+            echo "</ul>";
+
+        } else {
+            echo "<p><em>No attendance slots found.</em></p>";
         }
-        echo "</ul>";
-      } else {
-        echo "<p><em>No attendance slots found.</em></p>";
-      }
 
-      mysqli_close($link);
+        mysqli_close($link);
     }
     ?>
   </div>
 
 </div>
 
-<!-- Footer -->
 <div class="footer">
   @MyPetakom 2024/2025
 </div>
