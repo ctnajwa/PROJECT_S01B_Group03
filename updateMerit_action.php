@@ -31,16 +31,19 @@ if (empty($event_id)) {
     die("Event not found.");
 }
 
+// Combine role with event level
+$full_merit_description = $merit_description . " in " . $event_level . " Level";
+
 // Get merit_id
 $stmt = $conn->prepare("SELECT merit_id FROM merit WHERE merit_description = ?");
-$stmt->bind_param("s", $merit_description);
+$stmt->bind_param("s", $full_merit_description);
 $stmt->execute();
 $stmt->bind_result($merit_id);
 $stmt->fetch();
 $stmt->close();
 
 if (empty($merit_id)) {
-    die("Merit role not found.");
+    die("Merit role not found: " . htmlspecialchars($full_merit_description));
 }
 
 // Check for uploaded file
