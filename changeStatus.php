@@ -75,7 +75,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['claim_id'], $_POST['n
     echo "<script>alert('✅ Status updated successfully.'); window.location.href='changeStatus.php';</script>";
 }
 
-// Fetch all claims for display (including letter)
+// Search and filter
+$search = $_GET['search'] ?? '';
+$filterStatus = $_GET['status'] ?? '';
+
 $query = "
     SELECT 
         mc.claim_id, 
@@ -86,9 +89,36 @@ $query = "
     FROM meritclaim mc
     JOIN student s ON mc.student_id = s.student_id
     JOIN event e ON mc.event_id = e.event_id
-    ORDER BY mc.claim_id DESC
+    WHERE 1
 ";
-$result = $conn->query($query);
+
+$params = [];
+$types = "";
+
+if (!empty($search)) {
+    $query .= " AND (s.student_id LIKE ? OR e.event_title LIKE ?)";
+    $searchTerm = "%$search%";
+    $params[] = $searchTerm;
+    $params[] = $searchTerm;
+    $types .= "ss";
+}
+
+if (!empty($filterStatus)) {
+    $query .= " AND mc.claimStatus = ?";
+    $params[] = $filterStatus;
+    $types .= "s";
+}
+
+$query .= " ORDER BY mc.claim_id DESC";
+
+$stmt = $conn->prepare($query);
+
+if (!empty($params)) {
+    $stmt->bind_param($types, ...$params);
+}
+
+$stmt->execute();
+$result = $stmt->get_result();
 ?>
 
 <!DOCTYPE html>
@@ -144,6 +174,36 @@ $result = $conn->query($query);
       <div class="content-wrapper">
         <button class="back-btn" onclick="window.location.href='staff_dashboard.php'">BACK</button>
         <h2>Change Merit Claim Status</h2>
+<div class="top-actions">
+
+    <form method="GET" class="search-form">
+
+        <input 
+            type="text" 
+            name="search"
+            placeholder="Search For Event Title or Student ID"
+            value="<?= htmlspecialchars($search ?? '') ?>"
+        >
+
+        <select name="status">
+            <option value="">All Status</option>
+
+            <option value="In Progress"
+                <?= (($filterStatus ?? '') === 'In Progress') ? 'selected' : '' ?>>
+                In Progress
+            </option>
+
+            <option value="Submitted"
+                <?= (($filterStatus ?? '') === 'Submitted') ? 'selected' : '' ?>>
+                Submitted
+            </option>
+        </select>
+
+        <button type="submit">🔍</button>
+
+    </form>
+
+</div>
         <table>
           <tr>
             <th>Claim ID</th>
@@ -161,7 +221,35 @@ $result = $conn->query($query);
             <td>
                 <a href="view_letter.php?claim_id=<?= urlencode($row['claim_id']) ?>" target="_blank">View File</a>
             </td>
-            <td><?= htmlspecialchars($row['status']) ?></td>
+              <td>
+
+            <?php if ($row['status'] === 'Submitted'): ?>
+
+                <span style="
+                    background:#47d147;
+                    color:white;
+                    padding:8px 14px;
+                    border-radius:8px;
+                    font-weight:bold;
+                ">
+                    Submitted
+                </span>
+
+            <?php else: ?>
+
+                <span style="
+                    background:orange;
+                    color:white;
+                    padding:8px 14px;
+                    border-radius:8px;
+                    font-weight:bold;
+                ">
+                    In Progress
+                </span>
+
+            <?php endif; ?>
+
+        </td>
             <td>
               <form method="POST">
                 <input type="hidden" name="claim_id" value="<?= $row['claim_id'] ?>">
@@ -174,6 +262,21 @@ $result = $conn->query($query);
             </td>
           </tr>
           <?php endwhile; ?>
+
+<?php else: ?>
+
+    <tr>
+        <td colspan="6" style="
+            text-align:center;
+            padding:25px;
+            font-size:18px;
+            color:#666;
+        ">
+            No merit claims found.
+        </td>
+    </tr>
+
+<?php endif; ?>
         </table>
       </div>
     </main>
